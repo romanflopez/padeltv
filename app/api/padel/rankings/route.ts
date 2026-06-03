@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const PADEL_API_BASE = 'https://api.padelapi.org';
+const PADEL_API_BASE = 'https://padelapi.org/api';
 const PADEL_API_TOKEN = process.env.PADEL_API_TOKEN;
 
 export async function GET(request: Request) {
@@ -11,10 +11,10 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const limit = searchParams.get('limit') || '50';
-    const category = searchParams.get('category') || 'men';
+    const category = searchParams.get('category') || 'male';
 
     const response = await axios.get(
-      `${PADEL_API_BASE}/rankings?limit=${limit}&category=${category}`,
+      `${PADEL_API_BASE}/list-player-rankings?page_size=${limit}&gender=${category}`,
       {
         headers: {
           'Authorization': `Bearer ${PADEL_API_TOKEN}`,

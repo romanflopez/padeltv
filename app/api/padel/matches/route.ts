@@ -1,12 +1,12 @@
 import axios from 'axios';
 
-const PADEL_API_BASE = 'https://api.padelapi.org';
+const PADEL_API_BASE = 'https://padelapi.org/api';
 const PADEL_API_TOKEN = process.env.PADEL_API_TOKEN;
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const endpoint = searchParams.get('endpoint') || 'matches';
+    const endpoint = searchParams.get('endpoint') || 'list-live-matches';
     const limit = searchParams.get('limit') || '10';
 
     if (!PADEL_API_TOKEN) {
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const url = `${PADEL_API_BASE}/${endpoint}?limit=${limit}`;
+    const url = `${PADEL_API_BASE}/${endpoint}?page_size=${limit}`;
 
     const response = await axios.get(url, {
       headers: {
