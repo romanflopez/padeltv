@@ -1,62 +1,41 @@
-import axios from 'axios';
-
-const PADEL_API_BASE = 'https://padelapi.org/api';
-const PADEL_API_TOKEN = process.env.PADEL_API_TOKEN;
+import { getAllMatches } from '@/lib/scrapers';
 
 export async function GET(request: Request) {
   try {
-    if (!PADEL_API_TOKEN) {
-      return Response.json({ error: 'API token not configured' }, { status: 500 });
-    }
-
     const { searchParams } = new URL(request.url);
-    const limit = searchParams.get('limit') || '20';
+    const limit = parseInt(searchParams.get('limit') || '20');
 
-    const response = await axios.get(`${PADEL_API_BASE}/list-tournament-news?page_size=${limit}`, {
-      headers: {
-        'Authorization': `Bearer ${PADEL_API_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      timeout: 10000,
-    });
+    console.log('Scraping news...');
+
+    const matches = await getAllMatches();
+
+    // Convert matches to news format
+    const news = matches.slice(0, limit).map((match: any, i: number) => ({
+      id: `news-${i}`,
+      title: match.title || `Match: ${match.id}`,
+      description: `Tournament: ${match.tournament}`,
+      date: match.date,
+      source: match.source || match.tournament,
+    }));
 
     const cacheHeaders = {
       'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200',
     };
 
-    return Response.json(response.data, { headers: cacheHeaders });
-  } catch (error) {
-    console.error('News API error:', error);
+    return Response.json(
+      {
+        news: news,
+        total: matches.length,
+        source: 'FIP + Premier Padel',
+      },
+      { headers: cacheHeaders }
+    );
+  } catch (error: any) {
+    console.error('Scraping error:', error.message || error);
 
-    const mockData = {
-      news: [
-        {
-          id: '1',
-          title: 'Lebron and Navarro dominate Premier Padel Finals',
-          description: 'Juan Lebron and Paquito Navarro continue their winning streak...',
-          date: new Date(Date.now()).toISOString(),
-          source: 'Premier Padel',
-          image: 'https://via.placeholder.com/400x300',
-        },
-        {
-          id: '2',
-          title: 'FIP Announces new tournament schedule for 2026',
-          description: 'The International Padel Federation releases the official calendar...',
-          date: new Date(Date.now() - 3600000).toISOString(),
-          source: 'FIP',
-          image: 'https://via.placeholder.com/400x300',
-        },
-        {
-          id: '3',
-          title: 'Galan and Carreno break rankings record',
-          description: 'The duo reaches historic points milestone in the world rankings...',
-          date: new Date(Date.now() - 7200000).toISOString(),
-          source: 'Padel World',
-          image: 'https://via.placeholder.com/400x300',
-        },
-      ],
-    };
-
-    return Response.json(mockData);
+    return Response.json(
+      { error: 'Failed to fetch news', details: error.message },
+      { status: 500 }
+    );
   }
 }
